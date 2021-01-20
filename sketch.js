@@ -1,17 +1,32 @@
 let stems = [];
 let leaves = [];
 let deadLeaves = [];
-// var leaf = new leaf(15, 75, 0);
+let grass = [];
+var wind;
+var blow;
+var height;
+var width;
 
 function setup() {
   // put setup code here
-  createCanvas(window.innerWidth-17, window.innerHeight-17);
-  stems.push(new stem(window.innerWidth/2));
-} // setup
+  // up = window.innerHeight-17;
+  // across = window.innderWidth-17;
+  height = 400;
+  width = 500;
+  createCanvas(width, height);
+  stems.push(new stem(width/2));
+  for(var i=0; i<50; i++) {
+    grass[i]=random(-5,5);
+  }
+  wind = 0;
+  blow = true;
+} // End of setup
 
 function draw() {
   // Color of background
   background(135, 206, 250);
+  
+  field();
 
   // Draw all stems
   stems.forEach(e => {
@@ -26,7 +41,46 @@ function draw() {
     e.draw();
     e.fall();
   });
+
+  rect(0, height-45, width, 55);
 } // End of draw
+
+function field(){
+  breeze();
+  
+  fill(6,50,11);
+  var i=0;
+  var p=0;
+  for(var z=height-50; z<=height+30; z=z+5){
+    for(var k=-50; k<width+50; k=k+2){
+    stroke(6+2*grass[i],50+0.5*grass[i+5],10+2*grass[i+10]);
+    //stroke(50*constrain(grass[i],1,5));
+    strokeWeight(2);
+    //line(k+p, z, k+grass[i]+p+wind*((p+10)/20), z-20+constrain(grass[i],-2,2));
+    line(k+p+0.1, z, k+grass[i]+p+wind, z-15+constrain(grass[i],-5,5)+wind/10);
+    i++;
+    if(i==50){
+      i=0;
+    }
+    }
+   p=p+3;
+  }
+}
+
+function breeze(){
+  if(wind==0){
+    blow=true;
+  }
+  if(wind<10 && blow==true){
+  wind=wind+.5;
+  }
+   if(wind==7){
+    blow=false;
+  }
+  if(wind>0 && blow==false){
+  wind=wind-.5;
+  }
+}
 
 function mouseClicked() {
   for(let i = leaves.length-1; i >= 0; i--) {
@@ -40,7 +94,7 @@ function mouseClicked() {
       }
     }
   }
-}
+} // End of mouseClicked
 
 function stem(gPos) {
   this.groundPos = gPos; // Starting ground position of stem
@@ -49,7 +103,7 @@ function stem(gPos) {
 
   // Push starting position into array storing growth points on stem
   this.growth = [];
-  this.growth.push([this.groundPos, window.innerHeight-17, 1]);
+  this.growth.push([this.groundPos, height, 1]);
 
   // draw:
   // Function to create/grow stem and create leaves
@@ -73,7 +127,7 @@ function stem(gPos) {
       this.growth.push([lastStem[0]+(this.groundChange/50), lastStem[1]-1, 0]); // Push new line position of stem
 
       // Add leaves on stem
-      if(lastStem[1] % 75 == 0) {
+      if(lastStem[1] % 75 == 0 && lastStem[1] < height-50) {
         leaves.push(new leaf(lastStem[0], lastStem[1], (Math.round(Math.random()) ? -PI/6 : -5*PI/6)));
       }
     } else {
@@ -156,7 +210,7 @@ function leaf(xPos, yPos, rot) {
   this.fall = function() {
     // this.rotation += PI/30;
     push();
-    if(this.yPos < window.innerHeight-17) {
+    if(this.yPos < height) {
       translate(this.xPos, this.yPos += 0.5);
     }
     pop();
