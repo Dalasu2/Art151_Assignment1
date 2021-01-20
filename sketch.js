@@ -1,7 +1,6 @@
-var rotation = 0;
-
-var stems = [];
-var leaves = [];
+let stems = [];
+let leaves = [];
+let deadLeaves = [];
 // var leaf = new leaf(15, 75, 0);
 
 function setup() {
@@ -14,10 +13,6 @@ function draw() {
   // Color of background
   background(135, 206, 250);
 
-  // stroke(0, 0, 0);
-  // fill(0, 100, 0);
-  // circle(window.innerWidth/2, window.innerHeight-17, 50);
-
   // Draw all stems
   stems.forEach(e => {
     e.draw();
@@ -25,15 +20,27 @@ function draw() {
 
   leaves.forEach(e => {
     e.draw();
-  })
+  });
 
-  // leaf.draw();
-  // if(leaf.size < 1) {
-  //   leaf.grow();
-  // }
-
-  // stem.draw();
+  deadLeaves.forEach(e => {
+    e.draw();
+    e.fall();
+  });
 } // End of draw
+
+function mouseClicked() {
+  for(let i = leaves.length-1; i >= 0; i--) {
+    if(leaves[i].size >= 1) {
+      let xChange = 25.98 * ((leaves[i].rotation == -PI/6) ? 1 : -1);
+      let mDist = dist(mouseX, mouseY, leaves[i].xPos+xChange, leaves[i].yPos-15);
+      if(mDist <= 40) {
+        deadLeaves.push(leaves[i]);
+        leaves.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
 
 function stem(gPos) {
   this.groundPos = gPos; // Starting ground position of stem
@@ -112,11 +119,6 @@ function leaf(xPos, yPos, rot) {
     translate(this.xPos, this.yPos);
     scale(this.size);
     rotate(this.rotation);
-    // translate(-15-this.size, -75-this.size);
-    // stroke(0, 0, 0);
-    // fill(0, 100, 0);
-    // ellipse(15, 30, 30, 60);
-    // line(15, 0, 15, 75);
 
     // Leaf
     stroke(0, 0, 0);
@@ -140,7 +142,6 @@ function leaf(xPos, yPos, rot) {
     }
   } // End of draw
 
-  // TODO - Finish Implementation of Leaf Growing
   // grow:
   // Function to control leaf growing
   this.grow = function() {
@@ -153,6 +154,11 @@ function leaf(xPos, yPos, rot) {
   // fall:
   // Function to control movement of leaf falling
   this.fall = function() {
-    this.rotation += PI/30;
+    // this.rotation += PI/30;
+    push();
+    if(this.yPos < window.innerHeight-17) {
+      translate(this.xPos, this.yPos += 0.5);
+    }
+    pop();
   } // End of fall
 }; // End of leaf
