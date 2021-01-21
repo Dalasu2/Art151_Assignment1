@@ -2,96 +2,110 @@ let stems = [];
 let leaves = [];
 let deadLeaves = [];
 let grass = [];
-let flowerColors = [[245, 174, 154, 240]];
+let flowerColors = [[245, 174, 154, 240], [245, 174, 184, 240],
+                    [245, 204, 174, 240], [235, 194, 204, 240], [230, 190, 230, 240]];
 let breeze;
 let blow;
 let height;
 let width;
 let c1, c2;
+let mAlpha = 255;
+
+let bg, gbg;
 
 function setup() {
   // put setup code here
   // up = window.innerHeight-17;
   // across = window.innderWidth-17;
-  height = 400;
-  width = 500;
+  // height = 400;
+  // width = 500;
+  height = window.innerHeight-17;
+  width = window.innerWidth-17;
   createCanvas(width, height);
   stems.push(new stem(width/2));
-  for(let i=0; i<50; i++) {
-    grass[i]=random(-5,5);
-  }
-  breeze = 0;
-  blow = true;
+
+  bg = createGraphics(width, height-50);
+  gbg = createGraphics(width, height);
+
+  sky();
+  field();
 } // End of setup
 
 function draw() {
-  c1 = color(255);
-  c2 = color(135, 206, 250);
-  for(let y=0; y<height; y++){
-    n = map(y,0,height,0,1);
-    let newc = lerpColor(c1,c2,n);
-    stroke(newc);
-    line(0,y,width, y);
-  }
-
-  push();
-  fill(87, 65, 47);
-  rect(0, height-45, width, 55);
-  pop();
+  // Draw background
+  image(bg, 0, 0);
+  image(gbg, 0, 0);
 
   // Draw all stems
   stems.forEach(e => {
     e.draw();
   });
 
+  // Backdrop color for grass to blend
+  push();
+  fill(6,50,11);
+  noStroke();
+  rect(0, height-20, width, 20);
+  pop();
+
+  // Draw all leaves
   leaves.forEach(e => {
     e.draw();
   });
 
+  // Animate leaves
   deadLeaves.forEach(e => {
     e.draw();
     e.fall();
   });
-
-  field();
 } // End of draw
 
+// sky:
+// Draw the sky and add it to the bg image
+function sky() {
+  // push();
+  c1 = color(255);
+  c2 = color(135, 206, 250);
+  for(let y=0; y<height; y++){
+    n = map(y,0,height,0,1);
+    let newc = lerpColor(c1,c2,n);
+    bg.stroke(newc);
+    bg.line(0,y,width, y);
+  }
+  // pop();
+} // End of sky
+
+// field:
+// Draw the grass and add it to the gbg image
 function field(){
+  for(let i=0; i<50; i++) {
+    grass[i]=random(-5,5);
+  }
+  breeze = 0;
+  blow = true;
+
   push();
-  blowBreeze();
+
+  gbg.fill(87, 65, 47);
+  gbg.rect(0, height-45, width, 55);
   
   fill(6,50,11);
   let i=0;
   let p=0;
   for(let z=height-50; z<=height+30; z=z+5){
-    for(let k=-50; k<width+50; k=k+2){
-    stroke(6+2*grass[i],50+0.5*grass[i+5],10+2*grass[i+10]);
-    strokeWeight(2);
-    line(k+p+0.1, z, k+grass[i]+p+breeze, z-15+constrain(grass[i],-5,5)+breeze/10);
-    i++;
-    if(i==50){
-      i=0;
-    }
+    for(let k=-50; k<width+25; k=k+2){
+      gbg.stroke(6+2*grass[i],50+0.5*grass[i+5],10+2*grass[i+10]);
+      gbg.strokeWeight(2);
+      gbg.line(k+p+0.1, z, k+grass[i]+p+breeze, z-15+constrain(grass[i],-5,5)+breeze/10);
+      i++;
+      if(i==50){
+        i=0;
+      }
     }
    p=p+3;
   }
   pop();
-}
-
-function blowBreeze(){
-  if(breeze==0){
-    blow=true;
-  }
-  if(breeze<10 && blow==true){
-  breeze=breeze+.5;
-  }
-   if(breeze==7){
-    blow=false;
-  }
-  if(breeze>0 && blow==false){
-  breeze=breeze-.5;
-  }
-}
+} // End of field
 
 function mouseClicked() {
   for(let i = leaves.length-1; i >= 0; i--) {
@@ -117,6 +131,7 @@ function stem(gPos) {
   this.shouldClean = true; // Clean up last elements of array after stem grows
   this.mFlower = flowerColors[Math.floor(Math.random()*flowerColors.length)];
   this.size = 0;
+  this.mHeight = Math.round(Math.random()*100+60);
 
   // Push starting position into array storing growth points on stem
   this.growth = [];
@@ -137,7 +152,7 @@ function stem(gPos) {
     pop();
 
     // Check if stem has grown completely
-    if(lastStem[1] > 60) {
+    if(lastStem[1] > this.mHeight) {
       // Check position of stem line to create random curve
       if(lastStem[0] >= this.groundPos+Math.abs(this.groundChange) || lastStem[0] <= this.groundPos-Math.abs(this.groundChange)) {
         // Clean up repetitive points to make code run more efficiently
@@ -151,7 +166,7 @@ function stem(gPos) {
       this.growth.push([lastStem[0]+(this.groundChange/50), lastStem[1]-1, 0]); // Push new line position of stem
 
       // Add leaves on stem
-      if(lastStem[1] % 75 == 0 && lastStem[1] < height-50 && lastStem[1] > 100) {
+      if(lastStem[1] % 75 == 0 && lastStem[1] < height-50 && lastStem[1] > this.mHeight+60) {
         leaves.push(new leaf(lastStem[0], lastStem[1], (Math.round(Math.random()) ? -PI/6 : -5*PI/6)));
       }
     } else {
@@ -168,10 +183,10 @@ function stem(gPos) {
       translate(lastStem[0], lastStem[1]);
       fill(168, 164, 113, 240);
       noStroke();
-      ellipse(0, 0, 36, 36);
+      ellipse(0, 0, 50, 50);
 
       fill(this.mFlower[0], this.mFlower[1], this.mFlower[2], this.mFlower[3]);
-      if(this.size < 600) {
+      if(this.size < 800) {
         this.size += 4;
       }
       for (let r4 = 0; r4 < 10; r4++) {
@@ -206,13 +221,15 @@ function leaf(xPos, yPos, rot) {
     push();
     translate(this.xPos, this.yPos);
     rotate(this.rotation);
+    scale(this.size);
 
     // Leaf
     stroke(0, 0, 0);
+    strokeWeight(1.1);
     fill(0, 100, 0);
-    ellipse(45*this.size, 0, 60*this.size, 30*this.size);
-    push();
-    scale(this.size);
+    // ellipse(45*this.size, 0, 59*this.size, 29*this.size);
+    ellipse(45, 0, 60, 30);
+    // push();
     // Stem
     line(0, 0, 75, 0);
     // Leaf Veins
@@ -224,7 +241,7 @@ function leaf(xPos, yPos, rot) {
     line(45, 0, 60, -13);
     line(60, 0, 70, 8);
     line(60, 0, 70, -8);
-    pop();
+    // pop();
     pop();
 
     if(this.size < 1) {
