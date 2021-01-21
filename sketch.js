@@ -8,8 +8,11 @@ let breeze;
 let blow;
 let height;
 let width;
+
+let gPositions = [];
 let c1, c2;
 let mAlpha = 255;
+let time;
 
 let bg, gbg;
 
@@ -21,11 +24,16 @@ function setup() {
   // width = 500;
   height = window.innerHeight-17;
   width = window.innerWidth-17;
+
+  gPositions.push(width*2/8, width*3/8, width*5/8, width*6/8, width*7/8, width/8);
+
   createCanvas(width, height);
   stems.push(new stem(width/2));
 
   bg = createGraphics(width, height-50);
   gbg = createGraphics(width, height);
+
+  time = millis();
 
   sky();
   field();
@@ -58,6 +66,14 @@ function draw() {
     e.draw();
     e.fall();
   });
+
+  if(gPositions.length > 0 && millis()-time > 5000) {
+    let tmp = Math.floor(Math.random()*gPositions.length);
+    stems.push(new stem(gPositions[tmp]));
+    // console.log("number: " + gPositions[tmp] + ", width: " + width);
+    gPositions.splice(tmp, 1);
+    time = millis();
+  }
 } // End of draw
 
 // sky:
@@ -68,6 +84,7 @@ function sky() {
   c2 = color(135, 206, 250);
   for(let y=0; y<height; y++){
     n = map(y,0,height,0,1);
+    n *=2;
     let newc = lerpColor(c1,c2,n);
     bg.stroke(newc);
     bg.line(0,y,width, y);
@@ -110,10 +127,7 @@ function field(){
 function mouseClicked() {
   for(let i = leaves.length-1; i >= 0; i--) {
     if(leaves[i].size >= 1) {
-      let xChange = 38 * ((leaves[i].rotation == -PI/6) ? 1 : -1);
-      let yChange = -20;
-
-      let mDist = dist(mouseX, mouseY, leaves[i].xPos+xChange, leaves[i].yPos+yChange);
+      let mDist = dist(mouseX, mouseY, leaves[i].xLeaf, leaves[i].yLeaf);
       if(mDist <= 40) {
         // tmpX = leaves[i].xPos+xChange;
         // tmpY = leaves[i].yPos-20;
@@ -126,12 +140,12 @@ function mouseClicked() {
 } // End of mouseClicked
 
 function stem(gPos) {
-  this.groundPos = gPos; // Starting ground position of stem
+  this.groundPos = gPos+(Math.round(Math.random()*30)*(Math.round(Math.random()) ? 1 : -1)); // Starting ground position of stem
   this.groundChange = 0; // Change in direction of stem
   this.shouldClean = true; // Clean up last elements of array after stem grows
   this.mFlower = flowerColors[Math.floor(Math.random()*flowerColors.length)];
   this.size = 0;
-  this.mHeight = Math.round(Math.random()*100+60);
+  this.mHeight = Math.round(Math.random()*200+60);
 
   // Push starting position into array storing growth points on stem
   this.growth = [];
@@ -166,7 +180,7 @@ function stem(gPos) {
       this.growth.push([lastStem[0]+(this.groundChange/50), lastStem[1]-1, 0]); // Push new line position of stem
 
       // Add leaves on stem
-      if(lastStem[1] % 75 == 0 && lastStem[1] < height-50 && lastStem[1] > this.mHeight+60) {
+      if(lastStem[1] % 75 == 0 && lastStem[1] < height-50 && lastStem[1] > this.mHeight+100) {
         leaves.push(new leaf(lastStem[0], lastStem[1], (Math.round(Math.random()) ? -PI/6 : -5*PI/6)));
       }
     } else {
@@ -186,11 +200,11 @@ function stem(gPos) {
       ellipse(0, 0, 50, 50);
 
       fill(this.mFlower[0], this.mFlower[1], this.mFlower[2], this.mFlower[3]);
-      if(this.size < 800) {
+      if(this.size < 1000) {
         this.size += 4;
       }
       for (let r4 = 0; r4 < 10; r4++) {
-        ellipse(0, 10 + this.size/20, 10 + this.size/40, 20 + this.size/20);
+        ellipse(0, 10 + this.size/20, 10 + this.size/30, 20 + this.size/15);
         rotate(PI / 5);
       }
       pop();
@@ -210,10 +224,18 @@ function leaf(xPos, yPos, rot) {
   this.size = 0; // Life size of leaf
   this.life = true; // Whether leaf is alive or not
   this.rotation = rot; // Rotation of leaf
+  this.rotDir = (rot > -1) ? 1 : -1;
+  this.rotMag = 0;
+  this.rotBool = false;
 
-  // Coordinates of leaf position
+  // Coordinates of leaf stem position
   this.xPos = xPos;
   this.yPos = yPos;
+  this.newXPos = xPos;
+
+  // Coordinates of leaf
+  this.xLeaf = this.xPos+(38 * ((this.rotation == -PI/6) ? 1 : -1));
+  this.yLeaf = this.yPos-20;
 
   // draw:
   // Controls drawing the leaf on the screen
@@ -261,10 +283,25 @@ function leaf(xPos, yPos, rot) {
   // fall:
   // Function to control movement of leaf falling
   this.fall = function() {
-    // this.rotation += PI/30;
     push();
-    if(this.yPos < height) {
-      translate(this.xPos, this.yPos += 0.5);
+    if(this.yPos < height && this.yLeaf < height) {
+      this.rotation += this.rotDir*this.rotMag*PI/60;
+      if(this.rotBool) {
+        this.rotMag -= 0.05;
+        if(this.rotMag <= -1) { this.rotBool = false; }
+      } else {
+        this.rotMag += 0.05;
+        if(this.rotMag >= 1) { this.rotBool = true; }
+      }
+
+      if(this.xPos == this.newXPos) {
+        this.newXPos += Math.round((Math.random()+1)*10*(Math.round(Math.random()) ? -1 : 1));
+      } else if(this.newXPos > this.xPos) {
+        this.xPos += 0.5;
+      } else {
+        this.xPos -= 0.5;
+      }
+      translate(this.xPos, this.yPos += 1);
     }
     pop();
   } // End of fall
