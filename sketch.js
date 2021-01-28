@@ -10,11 +10,12 @@ let height;
 let width;
 
 let gPositions = [];
-let c1, c2;
-let mAlpha = 255;
+let c1, c2, bc;
+let mAlpha = 210;
 let time;
 
 let bg, gbg;
+let rgb1, rgb2;
 
 function setup() {
   // put setup code here
@@ -22,6 +23,8 @@ function setup() {
   // across = window.innderWidth-17;
   // height = 400;
   // width = 500;
+  rgb1 = {r: 255, g: 255, b:255};
+  rgb2 = {r: 135, g: 206, b:250};
   height = window.innerHeight-17;
   width = window.innerWidth-17;
 
@@ -39,9 +42,14 @@ function setup() {
   field();
 } // End of setup
 
+// TODO - Add rain
+// TODO - Add death to flowers
 function draw() {
   // Draw background
   image(bg, 0, 0);
+  // bc = color(0);
+  // bc.setAlpha(mAlpha);
+  // background(bc);
   image(gbg, 0, 0);
 
   // Draw all stems
@@ -79,9 +87,10 @@ function draw() {
 // sky:
 // Draw the sky and add it to the bg image
 function sky() {
-  // push();
-  c1 = color(255);
-  c2 = color(135, 206, 250);
+  c1 = color(rgb1.r, rgb1.g, rgb1.b);
+  // c1 = color(99, 99, 99);
+  c2 = color(rgb2.r, rgb2.g, rgb2.b);
+  // c2 = color(0);
   for(let y=0; y<height; y++){
     n = map(y,0,height,0,1);
     n *=2;
@@ -89,7 +98,6 @@ function sky() {
     bg.stroke(newc);
     bg.line(0,y,width, y);
   }
-  // pop();
 } // End of sky
 
 // field:
@@ -133,6 +141,13 @@ function mouseClicked() {
         // tmpY = leaves[i].yPos-20;
         deadLeaves.push(leaves[i]);
         leaves.splice(i, 1);
+        rgb1.r -= 2.5;
+        rgb1.g -= 2.64;
+        rgb1.b -= 2.5;
+        rgb2.r -= 2;
+        rgb2.g -= 2;
+        rgb2.b -= 2;
+        sky();
         break;
       }
     }
@@ -236,6 +251,7 @@ function leaf(xPos, yPos, rot) {
   // Coordinates of leaf
   this.xLeaf = this.xPos+(38 * ((this.rotation == -PI/6) ? 1 : -1));
   this.yLeaf = this.yPos-20;
+  this.color = {r: 0, g: 100, b: 0};
 
   // draw:
   // Controls drawing the leaf on the screen
@@ -248,7 +264,7 @@ function leaf(xPos, yPos, rot) {
     // Leaf
     stroke(0, 0, 0);
     strokeWeight(1.1);
-    fill(0, 100, 0);
+    fill(this.color.r, this.color.g, this.color.b);
     // ellipse(45*this.size, 0, 59*this.size, 29*this.size);
     ellipse(45, 0, 60, 30);
     // push();
@@ -279,12 +295,11 @@ function leaf(xPos, yPos, rot) {
     }
   } // End of grow
 
-  // TODO - Implement Leaf Falling with wind
   // fall:
   // Function to control movement of leaf falling
   this.fall = function() {
     push();
-    if(this.yPos < height && this.yLeaf < height) {
+    if(this.yPos < height-20 && this.yLeaf < height) {
       this.rotation += this.rotDir*this.rotMag*PI/60;
       if(this.rotBool) {
         this.rotMag -= 0.05;
@@ -295,13 +310,22 @@ function leaf(xPos, yPos, rot) {
       }
 
       if(this.xPos == this.newXPos) {
-        this.newXPos += Math.round((Math.random()+1)*10*(Math.round(Math.random()) ? -1 : 1));
+        this.newXPos += Math.round((Math.random()+1)*20*(Math.round(Math.random()) ? -1 : 1));
       } else if(this.newXPos > this.xPos) {
         this.xPos += 0.5;
       } else {
         this.xPos -= 0.5;
       }
       translate(this.xPos, this.yPos += 1);
+    } else {
+      // console.log(deadLeaves.indexOf(this));
+      if(this.color.b < 70) {
+        let change = Math.random() * 0.8 * this.rotDir;
+        this.color.r += 3 + change;
+        this.color.g += change;
+        this.color.b += 2;
+        console.log(this.color);
+      }
     }
     pop();
   } // End of fall
